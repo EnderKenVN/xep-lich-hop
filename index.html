@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xếp lịch họp nhóm</title>
+<style>
+:root{--bg:#f5f2f9;--card:#fff;--ink:#1d1527;--muted:#6a5f78;--line:#d9d1e3;--acc:#4a2c6b;--accink:#fff;--good:#1b7a43;--goodbg:#e2f3e8;--bad:#b3261e;--badbg:#fbe7e5;--heat:74,44,107;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#171220;--card:#211a2d;--ink:#eee8f5;--muted:#a99dba;--line:#382c4a;--acc:#b794e0;--accink:#1a1024;--good:#7fd9a1;--goodbg:#173323;--bad:#ff8f86;--badbg:#3b1b19;--heat:183,148,224;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Be Vietnam Pro","Segoe UI",system-ui,sans-serif;line-height:1.55}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+h1{margin:0 0 4px;font-size:1.7rem}h2{font-size:1.1rem;margin:0 0 12px}
+.sub{color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+label{font-weight:600;font-size:.9rem;display:block;margin-bottom:4px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+input[type=checkbox]{width:auto}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px}
+button.p{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
+button.x{padding:6px 10px;color:var(--bad)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.row>*{flex:1 1 90px}.row>button,.row>.chk{flex:0 0 auto}
+.chk{display:flex;gap:6px;align-items:center;font-size:.9rem;white-space:nowrap}
+.hint{font-size:.85rem;color:var(--muted)}
+.sug{border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.sug b{font-size:1.05rem}
+.tag{display:inline-block;font-size:.8rem;padding:2px 8px;border-radius:99px;margin-left:6px;font-weight:600;background:var(--goodbg);color:var(--good)}
+.tag.no{background:var(--badbg);color:var(--bad)}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:6px;text-align:center;font-size:.9rem}
+th{background:var(--acc);color:var(--accink)}
+.scroll{overflow-x:auto}
+.err{color:var(--bad);font-size:.88rem;margin-top:6px;white-space:pre-line}
+.ok{color:var(--good);font-size:.88rem;margin-top:6px}
+.bad-row{outline:2px solid var(--bad)}
+footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;text-align:center}
+#heat th{background:var(--bg);color:var(--ink)}
+#heat td{min-width:72px;height:44px}
+.bd{display:block;font-size:.68rem;color:#1d1527;border-radius:4px;margin-top:2px;padding:0 4px;font-weight:700}
+.leg{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:.85rem;margin-top:12px}
+.bar{display:inline-block;width:120px;height:12px;border-radius:6px;vertical-align:middle;background:linear-gradient(90deg,hsl(268,45%,94%),hsl(268,45%,32%));border:1px solid var(--line)}
+.sw{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-right:4px;background:var(--card)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Xếp lịch họp nhóm</h1>
+<p class="sub">Nhập lịch bận của từng người, công cụ tự tìm khung giờ chung có nhiều người rảnh nhất.</p>
+
+<div class="grid">
+<section class="card"><h2>1. Cuộc họp</h2>
+ <label for="mname">Tên cuộc họp</label><input id="mname" value="Họp nhóm đồ án">
+ <div class="row" style="margin-top:10px"><div><label for="dur">Thời lượng (giờ)</label><input id="dur" type="number" min="1" max="13" step="1" value="2"></div>
+ <div><label for="minp">Số người tối thiểu</label><input id="minp" type="number" min="1" max="8" value="3"></div></div>
+ <div class="hint">Nhập số giờ tùy ý, tối đa 13 giờ (cả khung 8h đến 21h trong một ngày). Lặp lại mỗi tuần, từ Thứ 2 đến Chủ nhật.</div>
+</section>
+<section class="card"><h2>2. Thành viên (tối đa 8)</h2><div id="members"></div>
+ <button id="addm">Thêm thành viên</button> <button id="sample">Nạp dữ liệu mẫu</button> <button id="clear">Xóa hết</button>
+</section>
+</div>
+
+<section class="card"><h2>3. Lịch bận</h2>
+ <div id="busy"></div><button id="addb">Thêm khoảng bận</button>
+ <details style="margin-top:12px"><summary><b>Nhập nhanh từ AI</b> (dán kết quả AI trả về)</summary>
+  <p class="hint">Dùng câu lệnh mẫu bên dưới với chatbot AI, rồi dán kết quả vào đây. Mỗi dòng: Tên, Ngày, Từ giờ, Đến giờ (cách nhau bằng Tab hoặc dấu phẩy).</p>
+  <textarea id="paste" rows="5" placeholder="An&#9;Thứ 2&#9;8&#9;12"></textarea>
+  <div class="row" style="margin-top:8px"><button id="imp" class="p">Nhập các dòng này</button><button id="cp">Sao chép câu lệnh mẫu</button></div>
+  <div id="impmsg"></div>
+ </details>
+</section>
+
+<section class="card" aria-live="polite"><h2>4. Khung giờ gợi ý</h2><div id="sug"></div>
+ <button id="msg">Sao chép tin nhắn mời họp</button> <span id="msgok" class="ok"></span>
+</section>
+
+<section class="card"><h2>5. Bản đồ nhiệt và các khung giờ gợi ý</h2><div class="scroll"><table id="heat"></table></div>
+ <div class="leg"><span>Ít người rảnh <span class="bar"></span> Đủ người rảnh</span>
+ <span><span class="sw" style="box-shadow:inset 0 0 0 3px #f5b301"></span>Gợi ý 1</span>
+ <span><span class="sw" style="box-shadow:inset 0 0 0 3px #3b9cff"></span>Gợi ý 2</span>
+ <span><span class="sw" style="box-shadow:inset 0 0 0 3px #ff7a45"></span>Gợi ý 3</span></div>
+ <p class="hint">Số trong ô là số người rảnh ở giờ đó; ô càng đậm càng nhiều người, chữ đậm là đủ cả nhóm. Khung viền màu là các khung được gợi ý, đã tính thời lượng họp, người bắt buộc và số người tối thiểu.</p></section>
+<footer id="team">Nhóm phát triển: Lê Hoàng Phương, Lê Diệu Tuyết Linh, Bùi Khải Phúc Thịnh</footer>
+</div>
+
+<script>
+const DAYS=["Thứ 2","Thứ 3","Thứ 4","Thứ 5","Thứ 6","Thứ 7","Chủ nhật"], H0=8, NH=13, KEY="xeplich_v1";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const PROMPT="Dưới đây là thời khóa biểu hoặc mô tả lịch bận của một người tên [TÊN]. Hãy trả về mỗi khoảng bận trên một dòng, gồm 4 cột cách nhau bằng dấu Tab: Tên | Ngày (chỉ dùng một trong: Thứ 2, Thứ 3, Thứ 4, Thứ 5, Thứ 6, Thứ 7, Chủ nhật) | Từ giờ (số nguyên từ 0 đến 24) | Đến giờ (số nguyên từ 0 đến 24). Làm tròn ra giờ tròn, không thêm tiêu đề, không giải thích. Nếu không chắc một dòng nào, bỏ qua dòng đó.\n\nNội dung: [dán thời khóa biểu hoặc tin nhắn]";
+const SAMPLE={members:[{n:"An",m:true},{n:"Bình",m:false},{n:"Chi",m:false},{n:"Dũng",m:false},{n:"Em",m:false}],
+busy:[["An","Thứ 2",8,12],["An","Thứ 3",18,21],["An","Thứ 4",8,12],["An","Thứ 6",13,17],["An","Chủ nhật",8,10],
+["Bình","Thứ 2",13,17],["Bình","Thứ 3",8,12],["Bình","Thứ 5",8,12],["Bình","Thứ 6",18,21],["Bình","Thứ 7",8,12],
+["Chi","Thứ 2",8,11],["Chi","Thứ 4",13,17],["Chi","Thứ 5",13,17],["Chi","Thứ 6",8,11],["Chi","Thứ 7",14,18],
+["Dũng","Thứ 2",18,21],["Dũng","Thứ 3",13,17],["Dũng","Thứ 4",18,21],["Dũng","Thứ 5",8,12],["Dũng","Thứ 6",8,12],["Dũng","Chủ nhật",8,12],
+["Em","Thứ 2",8,12],["Em","Thứ 3",8,12],["Em","Thứ 4",13,17],["Em","Thứ 5",18,21],["Em","Thứ 6",13,17],["Em","Thứ 7",8,11],["Em","Chủ nhật",15,18]]};
+let S={members:[],busy:[]};
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify({S,name:$("mname").value,dur:$("dur").value,minp:$("minp").value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d){S=d.S;$("mname").value=d.name;$("dur").value=d.dur;$("minp").value=d.minp;return true}}catch(e){}return false}
+function setSample(){S={members:SAMPLE.members.map(x=>({...x})),busy:SAMPLE.busy.map(x=>[...x])}}
+
+function renderMembers(){
+  $("members").innerHTML=S.members.map((m,i)=>`<div class="row"><input data-i="${i}" class="mn" value="${esc(m.n)}" aria-label="Tên thành viên ${i+1}" placeholder="Tên">
+  <label class="chk"><input type="checkbox" class="mm" data-i="${i}" ${m.m?"checked":""}> Bắt buộc</label><button class="x" data-i="${i}" aria-label="Xóa">Xóa</button></div>`).join("");
+  document.querySelectorAll(".mn").forEach(e=>e.oninput=()=>{const old=S.members[e.dataset.i].n;S.members[e.dataset.i].n=e.value.trim();S.busy.forEach(b=>{if(b[0]===old)b[0]=e.value.trim()});renderBusy();update()});
+  document.querySelectorAll(".mm").forEach(e=>e.onchange=()=>{S.members[e.dataset.i].m=e.checked;update()});
+  document.querySelectorAll("#members .x").forEach(e=>e.onclick=()=>{const n=S.members[e.dataset.i].n;S.members.splice(e.dataset.i,1);S.busy=S.busy.filter(b=>b[0]!==n);renderMembers();renderBusy();update()});
+  $("addm").disabled=S.members.length>=8;
+}
+function rowErr(b){
+  const names=S.members.map(m=>m.n);
+  if(!names.includes(b[0])||!b[0])return"Chọn thành viên";
+  if(!DAYS.includes(b[1]))return"Ngày không hợp lệ";
+  if(!Number.isInteger(+b[2])||!Number.isInteger(+b[3])||b[2]===""||b[3]==="")return"Giờ phải là số nguyên";
+  if(+b[3]<=+b[2])return"Giờ đến phải lớn hơn giờ từ";
+  return"";
+}
+function renderBusy(){
+  const opt=(arr,v)=>arr.map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("");
+  $("busy").innerHTML=S.busy.map((b,i)=>{const e=rowErr(b);return `<div class="row ${e?"bad-row":""}">
+  <select data-i="${i}" data-k="0" aria-label="Thành viên"><option value=""></option>${opt(S.members.map(m=>m.n),b[0])}</select>
+  <select data-i="${i}" data-k="1" aria-label="Ngày">${opt(DAYS,b[1])}</select>
+  <input type="number" min="0" max="24" data-i="${i}" data-k="2" value="${esc(b[2])}" aria-label="Từ giờ">
+  <input type="number" min="0" max="24" data-i="${i}" data-k="3" value="${esc(b[3])}" aria-label="Đến giờ">
+  <button class="x" data-i="${i}" aria-label="Xóa dòng">Xóa</button><span class="${e?"err":"ok"}" style="flex:1 1 140px">${e||"OK"}</span></div>`}).join("")||'<p class="hint">Chưa có lịch bận.</p>';
+  document.querySelectorAll("#busy select,#busy input").forEach(e=>e.onchange=()=>{S.busy[e.dataset.i][e.dataset.k]=e.dataset.k>1?e.value:e.value;renderBusy();update()});
+  document.querySelectorAll("#busy .x").forEach(e=>e.onclick=()=>{S.busy.splice(e.dataset.i,1);renderBusy();update()});
+}
+function isFree(name,d,h){return !S.busy.some(b=>b[0]===name&&b[1]===DAYS[d]&&!rowErr(b)&&+b[2]<h+1&&+b[3]>h)}
+function compute(){
+  const ms=S.members.filter(m=>m.n), dur=Math.min(NH,Math.max(1,Math.round(+$("dur").value)||1)), minp=Math.max(1,+$("minp").value||1);
+  const free=ms.map(m=>DAYS.map((_,d)=>Array.from({length:NH},(_,i)=>isFree(m.n,d,H0+i))));
+  const heat=DAYS.map((_,d)=>Array.from({length:NH},(_,i)=>free.reduce((s,f)=>s+(f[d][i]?1:0),0)));
+  const cand=[];
+  for(let d=0;d<7;d++)for(let i=0;i+dur<=NH;i++){
+    let cnt=0,miss=0,absent=[];
+    ms.forEach((m,k)=>{let ok=true;for(let t=0;t<dur;t++)if(!free[k][d][i+t])ok=false;if(ok)cnt++;else{absent.push(m.n);if(m.m)miss++}});
+    if(miss===0&&cnt>=minp&&cnt>0)cand.push({d,h:H0+i,cnt,absent,score:cnt*1000-(d*NH+i+1)});
+  }
+  cand.sort((a,b)=>b.score-a.score);
+  return{ms,dur,heat,top:cand.slice(0,3)};
+}
+let R=null;
+function update(){
+  R=compute();
+  $("sug").innerHTML=R.top.length?R.top.map((c,i)=>`<div class="sug"><b>Gợi ý ${i+1}: ${DAYS[c.d]}, ${c.h}h – ${c.h+R.dur}h</b>
+   <span class="tag">${c.cnt}/${R.ms.length} người rảnh</span><div class="hint">${c.absent.length?"Không rảnh: "+esc(c.absent.join(", ")):"Không ai vắng"}</div></div>`).join(""):
+   '<p class="err">Không có khung giờ phù hợp. Hãy giảm thời lượng, giảm số người tối thiểu hoặc bỏ bớt người bắt buộc.</p>';
+  const tot=Math.max(1,R.ms.length), RC=["#f5b301","#3b9cff","#ff7a45"];
+  const rank=(d,h)=>R.top.findIndex(c=>c.d===d&&h>=c.h&&h<c.h+R.dur);
+  $("heat").innerHTML="<tr><th>Giờ</th>"+DAYS.map(d=>`<th>${d}</th>`).join("")+"</tr>"+
+   Array.from({length:NH},(_,i)=>`<tr><th>${H0+i}h–${H0+i+1}h</th>`+DAYS.map((_,d)=>{
+    const v=R.heat[d][i],L=Math.round(94-62*(v/tot)),k=rank(d,H0+i),st=R.top.map((c,j)=>c.d===d&&c.h===H0+i?j:-1).filter(j=>j>=0);
+    return `<td style="background:hsl(268,45%,${L}%);color:${L<60?"#fff":"#1d1527"};${k>=0?`box-shadow:inset 0 0 0 4px ${RC[k]};`:""}${v===tot&&tot>0?"font-weight:700;":""}">${v}${st.map(j=>`<span class="bd" style="background:${RC[j]}">Gợi ý ${j+1}</span>`).join("")}</td>`}).join("")+"</tr>").join("");
+  save();
+}
+$("addm").onclick=()=>{if(S.members.length<8){S.members.push({n:"Thành viên "+(S.members.length+1),m:false});renderMembers();renderBusy();update()}};
+$("addb").onclick=()=>{S.busy.push([S.members[0]?.n||"","Thứ 2",8,10]);renderBusy();update()};
+$("sample").onclick=()=>{setSample();renderMembers();renderBusy();update()};
+$("clear").onclick=()=>{S={members:[],busy:[]};renderMembers();renderBusy();update()};
+["mname","dur","minp"].forEach(id=>$(id).oninput=()=>update());
+$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(PROMPT);$("impmsg").innerHTML='<div class="ok">Đã sao chép câu lệnh mẫu.</div>'}catch(e){$("impmsg").innerHTML='<div class="err">Không sao chép được, hãy tự chọn và sao chép:</div><textarea rows="5" readonly>'+esc(PROMPT)+'</textarea>'}};
+$("imp").onclick=()=>{
+  const lines=$("paste").value.split("\n").map(l=>l.trim()).filter(Boolean); let ok=0,errs=[];
+  lines.forEach((l,i)=>{const p=l.split(/\t|,/).map(x=>x.trim());
+    if(p.length<4){errs.push(`Dòng ${i+1}: thiếu cột`);return}
+    const row=[p[0],p[1],p[2],p[3]], e=rowErr(row);
+    if(e){errs.push(`Dòng ${i+1} (${l}): ${e}`);return}
+    S.busy.push(row);ok++});
+  $("impmsg").innerHTML=`<div class="ok">Đã nhập ${ok} dòng hợp lệ.</div>`+(errs.length?`<div class="err">Bỏ qua ${errs.length} dòng lỗi, hãy kiểm tra lại với thời khóa biểu gốc:\n${esc(errs.join("\n"))}</div>`:"");
+  renderBusy();update();
+};
+$("msg").onclick=async()=>{
+  if(!R||!R.top.length){$("msgok").textContent="Chưa có gợi ý để soạn tin.";return}
+  const t=`Chào cả nhóm, mình đề xuất ${$("mname").value||"buổi họp"} vào các khung giờ sau:\n`+R.top.map((c,i)=>`${i+1}) ${DAYS[c.d]}, ${c.h}h–${c.h+R.dur}h`+(c.absent.length?` (vắng: ${c.absent.join(", ")})`:" (đủ người)")).join("\n")+"\nMọi người trả lời chọn gợi ý nào nhé.";
+  try{await navigator.clipboard.writeText(t);$("msgok").textContent="Đã sao chép."}catch(e){$("msgok").textContent="Không sao chép được."}
+};
+if(!load())setSample();
+renderMembers();renderBusy();update();
+</script>
+</body>
+</html>
