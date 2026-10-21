@@ -4,7 +4,7 @@ Công cụ web một tệp giúp nhóm sinh viên tìm khung giờ họp chung: 
 
 Sản phẩm dự thi **Kỹ năng CNTT và Ứng dụng AI – K21, FPT PolySchool TP.HCM**.
 
-**Link truy cập:** `https://enderkenvn.github.io/xep-lich-hop/`
+**Link truy cập:** https://enderkenvn.github.io/xep-lich-hop/
 
 ## Vấn đề
 Mỗi thành viên có thời khóa biểu và việc làm thêm khác nhau, cả nhóm mất rất nhiều tin nhắn qua lại mới chốt được giờ họp.
