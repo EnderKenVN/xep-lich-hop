@@ -35,7 +35,12 @@ th{background:var(--acc);color:var(--accink)}
 .scroll{overflow-x:auto}
 .err{color:var(--bad);font-size:.88rem;margin-top:6px;white-space:pre-line}
 .ok{color:var(--good);font-size:.88rem;margin-top:6px}
-.bad-row{outline:2px solid var(--bad)}
+.bad-row{outline:2px solid var(--bad);border-radius:6px}
+.mblock{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.mhead{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:baseline}
+.brow{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.brow select{width:auto;min-width:84px}.brow .lb{color:var(--muted);font-size:.9rem}
+.addb{font-size:.9rem}
 footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;text-align:center}
 #heat th{background:var(--bg);color:var(--ink)}
 #heat td{min-width:72px;height:44px}
@@ -62,16 +67,8 @@ footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:v
 </section>
 </div>
 
-<section class="card"><h2>3. Lịch bận</h2>
- <div class="row hint" style="font-weight:600; margin-bottom: 4px;">
-   <div>Thành viên</div>
-   <div>Thứ / Ngày</div>
-   <div>Từ giờ (h)</div>
-   <div>Đến giờ (h)</div>
-   <div style="flex:0 0 54px"></div>
-   <div style="flex:1 1 140px">Trạng thái</div>
- </div>
- <div id="busy"></div><button id="addb">Thêm khoảng bận</button>
+<section class="card"><h2>3. Lịch bận của từng người</h2>
+ <div id="busy"></div>
  <details style="margin-top:12px"><summary><b>Nhập nhanh từ AI</b> (dán kết quả AI trả về)</summary>
   <p class="hint">Dùng câu lệnh mẫu bên dưới với chatbot AI, rồi dán kết quả vào đây. Mỗi dòng: Tên, Ngày, Từ giờ, Đến giờ (cách nhau bằng Tab hoặc dấu phẩy).</p>
   <textarea id="paste" rows="5" placeholder="An&#9;Thứ 2&#9;8&#9;12"></textarea>
@@ -126,20 +123,32 @@ function rowErr(b){
   if(+b[3]<=+b[2])return"Giờ đến phải lớn hơn giờ từ";
   return"";
 }
+const hourOpts=v=>Array.from({length:25},(_,h)=>`<option value="${h}" ${v!==""&&+v===h?"selected":""}>${h}h</option>`).join("");
+function rowHtml(b,i,withMember){
+  const e=rowErr(b);
+  const mem=withMember?`<select data-i="${i}" data-k="0" aria-label="Thành viên"><option value="">Chọn thành viên</option>${S.members.filter(m=>m.n).map(m=>`<option ${m.n===b[0]?"selected":""}>${esc(m.n)}</option>`).join("")}</select>`:"";
+  return `<div class="brow ${e?"bad-row":""}">${mem}<span class="lb">Bận</span>
+  <select data-i="${i}" data-k="1" aria-label="Ngày bận">${DAYS.map(x=>`<option ${x===b[1]?"selected":""}>${x}</option>`).join("")}</select>
+  <span class="lb">từ</span><select data-i="${i}" data-k="2" aria-label="Bận từ giờ">${hourOpts(b[2])}</select>
+  <span class="lb">đến</span><select data-i="${i}" data-k="3" aria-label="Bận đến giờ">${hourOpts(b[3])}</select>
+  <button class="x" data-i="${i}" aria-label="Xóa khoảng bận">Xóa</button>${e?`<span class="err">${esc(e)}</span>`:""}</div>`;
+}
 function renderBusy(){
-  const opt=(arr,v)=>arr.map(x=>`<option ${x===v?"selected":""}>${esc(x)}</option>`).join("");
-  $("busy").innerHTML=S.busy.map((b,i)=>{const e=rowErr(b);return `<div class="row ${e?"bad-row":""}">
-  <select data-i="${i}" data-k="0" aria-label="Thành viên"><option value=""></option>${opt(S.members.map(m=>m.n),b[0])}</select>
-  <select data-i="${i}" data-k="1" aria-label="Ngày">${opt(DAYS,b[1])}</select>
-  <input type="number" min="0" max="24" data-i="${i}" data-k="2" value="${esc(b[2])}" placeholder="Từ giờ" aria-label="Từ giờ">
-  <input type="number" min="0" max="24" data-i="${i}" data-k="3" value="${esc(b[3])}" placeholder="Đến giờ" aria-label="Đến giờ">
-  <button class="x" data-i="${i}" aria-label="Xóa dòng">Xóa</button><span class="${e?"err":"ok"}" style="flex:1 1 140px">${e||"OK"}</span></div>`}).join("")||'<p class="hint">Chưa có lịch bận.</p>';
-  document.querySelectorAll("#busy select,#busy input").forEach(e=>e.onchange=()=>{S.busy[e.dataset.i][e.dataset.k]=e.dataset.k>1?e.value:e.value;renderBusy();update()});
+  const names=S.members.map(m=>m.n), all=S.busy.map((b,i)=>[b,i]);
+  let h='<p class="hint">Mỗi dòng là một khoảng thời gian người đó <b>bận</b> (đi học, đi làm, việc gia đình...). Mọi giờ còn lại từ 8h đến 21h được tính là <b>rảnh</b>. Ví dụ: <i>An, Thứ 2, từ 8h đến 12h</i> nghĩa là An bận sáng Thứ 2.</p>';
+  if(!S.members.some(m=>m.n))h+='<p class="hint">Hãy thêm thành viên ở bước 2 trước.</p>';
+  S.members.forEach(m=>{if(!m.n)return;const rows=all.filter(([b])=>b[0]===m.n);
+    h+=`<div class="mblock"><div class="mhead"><b>${esc(m.n)}</b><span class="hint">${rows.length?rows.length+" khoảng bận":"Chưa nhập lịch bận, coi như rảnh cả tuần"}</span></div>${rows.map(([b,i])=>rowHtml(b,i,false)).join("")}<button class="addb" data-n="${esc(m.n)}">+ Thêm khoảng bận cho ${esc(m.n)}</button></div>`});
+  const orphan=all.filter(([b])=>!names.includes(b[0])||!b[0]);
+  if(orphan.length)h+=`<div class="mblock"><div class="mhead"><b>Chưa gán thành viên</b><span class="hint">Chọn lại thành viên cho các dòng này, nếu không chúng sẽ bị bỏ qua.</span></div>${orphan.map(([b,i])=>rowHtml(b,i,true)).join("")}</div>`;
+  $("busy").innerHTML=h;
+  document.querySelectorAll("#busy select").forEach(e=>e.onchange=()=>{S.busy[e.dataset.i][e.dataset.k]=e.dataset.k>1?+e.value:e.value;renderBusy();update()});
   document.querySelectorAll("#busy .x").forEach(e=>e.onclick=()=>{S.busy.splice(e.dataset.i,1);renderBusy();update()});
+  document.querySelectorAll("#busy .addb").forEach(e=>e.onclick=()=>{S.busy.push([e.dataset.n,"Thứ 2",8,10]);renderBusy();update()});
 }
 function isFree(name,d,h){return !S.busy.some(b=>b[0]===name&&b[1]===DAYS[d]&&!rowErr(b)&&+b[2]<h+1&&+b[3]>h)}
 function compute(){
-  const ms=S.members.filter(m=>m.n), dur=Math.min(NH,Math.max(1,Math.round(+$("dur").value)\vert{}\vert{}1)), minp=Math.max(1,+$("minp").value||1);
+  const ms=S.members.filter(m=>m.n), dur=Math.min(NH,Math.max(1,Math.round(+$("dur").value)||1)), minp=Math.max(1,+$("minp").value||1);
   const free=ms.map(m=>DAYS.map((_,d)=>Array.from({length:NH},(_,i)=>isFree(m.n,d,H0+i))));
   const heat=DAYS.map((_,d)=>Array.from({length:NH},(_,i)=>free.reduce((s,f)=>s+(f[d][i]?1:0),0)));
   const cand=[];
@@ -166,10 +175,10 @@ function update(){
   save();
 }
 $("addm").onclick=()=>{if(S.members.length<8){S.members.push({n:"Thành viên "+(S.members.length+1),m:false});renderMembers();renderBusy();update()}};
-$("addb").onclick=()=>{S.busy.push([S.members[0]?.n||"","Thứ 2",8,10]);renderBusy();update()};
 $("sample").onclick=()=>{setSample();renderMembers();renderBusy();update()};
 $("clear").onclick=()=>{S={members:[],busy:[]};renderMembers();renderBusy();update()};
-["mname","dur","minp"].forEach(id=>$(id).oninput=()=>update());$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(PROMPT);$("impmsg").innerHTML='<div class="ok">Đã sao chép câu lệnh mẫu.</div>'}catch(e){$("impmsg").innerHTML='<div class="err">Không sao chép được, hãy tự chọn và sao chép:</div><textarea rows="5" readonly>'+esc(PROMPT)+'</textarea>'}};
+["mname","dur","minp"].forEach(id=>$(id).oninput=()=>update());
+$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(PROMPT);$("impmsg").innerHTML='<div class="ok">Đã sao chép câu lệnh mẫu.</div>'}catch(e){$("impmsg").innerHTML='<div class="err">Không sao chép được, hãy tự chọn và sao chép:</div><textarea rows="5" readonly>'+esc(PROMPT)+'</textarea>'}};
 $("imp").onclick=()=>{
   const lines=$("paste").value.split("\n").map(l=>l.trim()).filter(Boolean); let ok=0,errs=[];
   lines.forEach((l,i)=>{const p=l.split(/\t|,/).map(x=>x.trim());
