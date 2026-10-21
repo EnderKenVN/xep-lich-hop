@@ -18,7 +18,7 @@ Mỗi thành viên có thời khóa biểu và việc làm thêm khác nhau, c�
 - Dữ liệu tự lưu trong trình duyệt (localStorage), không gửi đi đâu.
 
 ## Cách chạy
-Không cần cài đặt hay API key. Mở `index.html` bằng trình duyệt, hoặc dùng bản demo trực tuyến. Bấm "Nạp dữ liệu mẫu" để xem ví dụ.
+Không cần cài đặt hay API key. Mở `index.html` bằng trình duyệt, hoặc dùng bản trực tuyến. Bấm "Nạp dữ liệu mẫu" để xem ví dụ.
 
 ## Cơ chế hoạt động
 1. Mỗi dòng lịch bận được kiểm tra (đúng tên, đúng ngày, giờ nguyên, giờ đến lớn hơn giờ từ); dòng lỗi không được tính.
