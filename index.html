@@ -69,12 +69,6 @@ footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:v
 
 <section class="card"><h2>3. Lịch bận của từng người</h2>
  <div id="busy"></div>
- <details style="margin-top:12px"><summary><b>Nhập nhanh từ AI</b> (dán kết quả AI trả về)</summary>
-  <p class="hint">Dùng câu lệnh mẫu bên dưới với chatbot AI, rồi dán kết quả vào đây. Mỗi dòng: Tên, Ngày, Từ giờ, Đến giờ (cách nhau bằng Tab hoặc dấu phẩy).</p>
-  <textarea id="paste" rows="5" placeholder="An&#9;Thứ 2&#9;8&#9;12"></textarea>
-  <div class="row" style="margin-top:8px"><button id="imp" class="p">Nhập các dòng này</button><button id="cp">Sao chép câu lệnh mẫu</button></div>
-  <div id="impmsg"></div>
- </details>
 </section>
 
 <section class="card" aria-live="polite"><h2>4. Khung giờ gợi ý</h2><div id="sug"></div>
@@ -94,7 +88,6 @@ footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:v
 const DAYS=["Thứ 2","Thứ 3","Thứ 4","Thứ 5","Thứ 6","Thứ 7","Chủ nhật"], H0=8, NH=13, KEY="xeplich_v1";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const PROMPT="Dưới đây là thời khóa biểu hoặc mô tả lịch bận của một người tên [TÊN]. Hãy trả về mỗi khoảng bận trên một dòng, gồm 4 cột cách nhau bằng dấu Tab: Tên | Ngày (chỉ dùng một trong: Thứ 2, Thứ 3, Thứ 4, Thứ 5, Thứ 6, Thứ 7, Chủ nhật) | Từ giờ (số nguyên từ 0 đến 24) | Đến giờ (số nguyên từ 0 đến 24). Làm tròn ra giờ tròn, không thêm tiêu đề, không giải thích. Nếu không chắc một dòng nào, bỏ qua dòng đó.\n\nNội dung: [dán thời khóa biểu hoặc tin nhắn]";
 const SAMPLE={members:[{n:"An",m:true},{n:"Bình",m:false},{n:"Chi",m:false},{n:"Dũng",m:false},{n:"Em",m:false}],
 busy:[["An","Thứ 2",8,12],["An","Thứ 3",18,21],["An","Thứ 4",8,12],["An","Thứ 6",13,17],["An","Chủ nhật",8,10],
 ["Bình","Thứ 2",13,17],["Bình","Thứ 3",8,12],["Bình","Thứ 5",8,12],["Bình","Thứ 6",18,21],["Bình","Thứ 7",8,12],
@@ -178,17 +171,6 @@ $("addm").onclick=()=>{if(S.members.length<8){S.members.push({n:"Thành viên "+
 $("sample").onclick=()=>{setSample();renderMembers();renderBusy();update()};
 $("clear").onclick=()=>{S={members:[],busy:[]};renderMembers();renderBusy();update()};
 ["mname","dur","minp"].forEach(id=>$(id).oninput=()=>update());
-$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(PROMPT);$("impmsg").innerHTML='<div class="ok">Đã sao chép câu lệnh mẫu.</div>'}catch(e){$("impmsg").innerHTML='<div class="err">Không sao chép được, hãy tự chọn và sao chép:</div><textarea rows="5" readonly>'+esc(PROMPT)+'</textarea>'}};
-$("imp").onclick=()=>{
-  const lines=$("paste").value.split("\n").map(l=>l.trim()).filter(Boolean); let ok=0,errs=[];
-  lines.forEach((l,i)=>{const p=l.split(/\t|,/).map(x=>x.trim());
-    if(p.length<4){errs.push(`Dòng ${i+1}: thiếu cột`);return}
-    const row=[p[0],p[1],p[2],p[3]], e=rowErr(row);
-    if(e){errs.push(`Dòng ${i+1} (${l}): ${e}`);return}
-    S.busy.push(row);ok++});
-  $("impmsg").innerHTML=`<div class="ok">Đã nhập ${ok} dòng hợp lệ.</div>`+(errs.length?`<div class="err">Bỏ qua ${errs.length} dòng lỗi, hãy kiểm tra lại với thời khóa biểu gốc:\n${esc(errs.join("\n"))}</div>`:"");
-  renderBusy();update();
-};
 $("msg").onclick=async()=>{
   if(!R||!R.top.length){$("msgok").textContent="Chưa có gợi ý để soạn tin.";return}
   const t=`Chào cả nhóm, mình đề xuất ${$("mname").value||"buổi họp"} vào các khung giờ sau:\n`+R.top.map((c,i)=>`${i+1}) ${DAYS[c.d]}, ${c.h}h–${c.h+R.dur}h`+(c.absent.length?` (vắng: ${c.absent.join(", ")})`:" (đủ người)")).join("\n")+"\nMọi người trả lời chọn gợi ý nào nhé.";
