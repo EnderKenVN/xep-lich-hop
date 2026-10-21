@@ -4,7 +4,8 @@ Công cụ web một tệp giúp nhóm sinh viên tìm khung giờ họp chung: 
 
 Sản phẩm dự thi **Kỹ năng CNTT và Ứng dụng AI – K21, FPT PolySchool TP.HCM**.
 
-Link truy cập: https://enderkenvn.github.io/xep-lich-hop/
+**Link truy cập:** `https://enderkenvn.github.io/xep-lich-hop/`
+
 ## Vấn đề
 Mỗi thành viên có thời khóa biểu và việc làm thêm khác nhau, cả nhóm mất rất nhiều tin nhắn qua lại mới chốt được giờ họp.
 
@@ -26,10 +27,9 @@ Không cần cài đặt hay API key. Mở `index.html` bằng trình duyệt, h
 4. Điểm = số người rảnh x 1000 - thứ tự trong tuần: nhiều người hơn thì thắng, bằng nhau thì khung sớm hơn thắng. Lấy 3 khung cao điểm nhất.
 
 ## AI được dùng ở đâu và kiểm tra thế nào
-- AI hỗ trợ **nhập liệu**: dùng câu lệnh mẫu (nút "Sao chép câu lệnh mẫu" trong ô "Nhập nhanh từ AI") với chatbot bất kỳ để đổi thời khóa biểu hoặc tin nhắn thành các dòng lịch bận, rồi dán vào công cụ.
-- Công cụ kiểm tra từng dòng AI trả về và chỉ nhận dòng hợp lệ, dòng lỗi được liệt kê để xem lại.
-- AI vẫn có thể đọc sai giờ mà đúng định dạng, nên cần đối chiếu với thời khóa biểu gốc.
-- Phần tìm khung giờ là thuật toán cố định, không dùng AI.
+- Công cụ **không có tính năng AI chạy bên trong**: phần tìm khung giờ là thuật toán cố định, cùng dữ liệu luôn cho cùng kết quả.
+- AI (Claude, Anthropic) được dùng để **hỗ trợ phát triển**: gợi ý ý tưởng, viết và chỉnh mã, kiểm thử.
+- Cách kiểm tra: nhóm chạy với dữ liệu mẫu và lịch thật, đối chiếu kết quả với tính tay; công cụ kiểm tra từng dòng lịch bận nhập vào và báo lỗi nếu sai.
 
 ## Giới hạn
 Tính theo giờ tròn, khung 8h đến 21h, lịch lặp giống nhau mỗi tuần, tối đa 8 thành viên, họp nằm trọn trong một ngày. Dữ liệu lưu riêng từng trình duyệt, chưa đồng bộ giữa các máy.
