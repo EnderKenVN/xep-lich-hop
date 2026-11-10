@@ -67,15 +67,19 @@ footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);color:v
 </section>
 </div>
 
-<section class="card"><h2>3. Lịch bận của từng người</h2>
+<section class="card"><h2>3. Lịch bận chung của cả nhóm</h2>
+ <div id="shared"></div>
+</section>
+
+<section class="card"><h2>4. Lịch bận riêng của từng người</h2>
  <div id="busy"></div>
 </section>
 
-<section class="card" aria-live="polite"><h2>4. Khung giờ gợi ý</h2><div id="sug"></div>
+<section class="card" aria-live="polite"><h2>5. Khung giờ gợi ý</h2><div id="sug"></div>
  <button id="msg">Sao chép tin nhắn mời họp</button> <span id="msgok" class="ok"></span>
 </section>
 
-<section class="card"><h2>5. Bản đồ nhiệt và các khung giờ gợi ý</h2><div class="scroll"><table id="heat"></table></div>
+<section class="card"><h2>6. Bản đồ nhiệt và các khung giờ gợi ý</h2><div class="scroll"><table id="heat"></table></div>
  <div class="leg"><span>Ít người rảnh <span class="bar"></span> Đủ người rảnh</span>
  <span><span class="sw" style="box-shadow:inset 0 0 0 3px #f5b301"></span>Gợi ý 1</span>
  <span><span class="sw" style="box-shadow:inset 0 0 0 3px #3b9cff"></span>Gợi ý 2</span>
@@ -94,11 +98,11 @@ busy:[["An","Thứ 2",8,12],["An","Thứ 3",18,21],["An","Thứ 4",8,12],["An","
 ["Chi","Thứ 2",8,11],["Chi","Thứ 4",13,17],["Chi","Thứ 5",13,17],["Chi","Thứ 6",8,11],["Chi","Thứ 7",14,18],
 ["Dũng","Thứ 2",18,21],["Dũng","Thứ 3",13,17],["Dũng","Thứ 4",18,21],["Dũng","Thứ 5",8,12],["Dũng","Thứ 6",8,12],["Dũng","Chủ nhật",8,12],
 ["Em","Thứ 2",8,12],["Em","Thứ 3",8,12],["Em","Thứ 4",13,17],["Em","Thứ 5",18,21],["Em","Thứ 6",13,17],["Em","Thứ 7",8,11],["Em","Chủ nhật",15,18]]};
-let S={members:[],busy:[]};
+let S={members:[],busy:[],shared:[]};
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({S,name:$("mname").value,dur:$("dur").value,minp:$("minp").value}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d){S=d.S;$("mname").value=d.name;$("dur").value=d.dur;$("minp").value=d.minp;return true}}catch(e){}return false}
-function setSample(){S={members:SAMPLE.members.map(x=>({...x})),busy:SAMPLE.busy.map(x=>[...x])}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d){S=d.S;if(!S.shared)S.shared=[];$("mname").value=d.name;$("dur").value=d.dur;$("minp").value=d.minp;return true}}catch(e){}return false}
+function setSample(){S={members:SAMPLE.members.map(x=>({...x})),busy:SAMPLE.busy.map(x=>[...x]),shared:[["Chủ nhật",18,21]]}}
 
 function renderMembers(){
   $("members").innerHTML=S.members.map((m,i)=>`<div class="row"><input data-i="${i}" class="mn" value="${esc(m.n)}" aria-label="Tên thành viên ${i+1}" placeholder="Tên">
@@ -111,10 +115,27 @@ function renderMembers(){
 function rowErr(b){
   const names=S.members.map(m=>m.n);
   if(!names.includes(b[0])||!b[0])return"Chọn thành viên";
-  if(!DAYS.includes(b[1]))return"Ngày không hợp lệ";
-  if(!Number.isInteger(+b[2])||!Number.isInteger(+b[3])||b[2]===""||b[3]==="")return"Giờ phải là số nguyên";
-  if(+b[3]<=+b[2])return"Giờ đến phải lớn hơn giờ từ";
+  return slotErr(b[1],b[2],b[3]);
+}
+function slotErr(d,f,t){
+  if(!DAYS.includes(d))return"Ngày không hợp lệ";
+  if(!Number.isInteger(+f)||!Number.isInteger(+t)||f===""||t==="")return"Giờ phải là số nguyên";
+  if(+t<=+f)return"Giờ đến phải lớn hơn giờ từ";
   return"";
+}
+function renderShared(){
+  let h='<p class="hint">Ghi một lần những khoảng thời gian <b>cả nhóm cùng bận</b> (giờ học chung, lịch thi, giờ nghỉ...). Các khoảng này tự áp dụng cho <b>mọi thành viên.</b></p>';
+  h+=S.shared.map((b,i)=>{const e=slotErr(b[0],b[1],b[2]);
+   return `<div class="brow ${e?"bad-row":""}"><span class="lb">Cả nhóm bận</span>
+   <select data-i="${i}" data-k="0" aria-label="Ngày bận chung">${DAYS.map(x=>`<option ${x===b[0]?"selected":""}>${x}</option>`).join("")}</select>
+   <span class="lb">từ</span><select data-i="${i}" data-k="1" aria-label="Bận chung từ giờ">${hourOpts(b[1])}</select>
+   <span class="lb">đến</span><select data-i="${i}" data-k="2" aria-label="Bận chung đến giờ">${hourOpts(b[2])}</select>
+   <button class="x" data-i="${i}" aria-label="Xóa khoảng bận chung">Xóa</button>${e?`<span class="err">${esc(e)}</span>`:""}</div>`}).join("");
+  h+='<button class="addb" id="addshared">+ Thêm khoảng bận chung</button>';
+  $("shared").innerHTML=h;
+  document.querySelectorAll("#shared select").forEach(e=>e.onchange=()=>{S.shared[e.dataset.i][e.dataset.k]=e.dataset.k>0?+e.value:e.value;renderShared();update()});
+  document.querySelectorAll("#shared .x").forEach(e=>e.onclick=()=>{S.shared.splice(e.dataset.i,1);renderShared();update()});
+  $("addshared").onclick=()=>{S.shared.push(["Thứ 2",8,10]);renderShared();update()};
 }
 const hourOpts=v=>Array.from({length:25},(_,h)=>`<option value="${h}" ${v!==""&&+v===h?"selected":""}>${h}h</option>`).join("");
 function rowHtml(b,i,withMember){
@@ -128,10 +149,10 @@ function rowHtml(b,i,withMember){
 }
 function renderBusy(){
   const names=S.members.map(m=>m.n), all=S.busy.map((b,i)=>[b,i]);
-  let h='<p class="hint">Mỗi dòng là một khoảng thời gian người đó <b>bận</b> (đi học, đi làm, việc gia đình...). Mọi giờ còn lại từ 8h đến 21h được tính là <b>rảnh</b>. Ví dụ: <i>An, Thứ 2, từ 8h đến 12h</i> nghĩa là An bận sáng Thứ 2.</p>';
+  let h='<p class="hint">Mỗi dòng là một khoảng thời gian <b>riêng của người đó</b> bận (đi làm, việc gia đình...); lịch bận chung ở bước 3 đã được tự tính cho tất cả. Mọi giờ còn lại từ 8h đến 21h được tính là <b>rảnh</b>. Ví dụ: <i>An, Thứ 2, từ 8h đến 12h</i> nghĩa là An bận sáng Thứ 2.</p>';
   if(!S.members.some(m=>m.n))h+='<p class="hint">Hãy thêm thành viên ở bước 2 trước.</p>';
   S.members.forEach(m=>{if(!m.n)return;const rows=all.filter(([b])=>b[0]===m.n);
-    h+=`<div class="mblock"><div class="mhead"><b>${esc(m.n)}</b><span class="hint">${rows.length?rows.length+" khoảng bận":"Chưa nhập lịch bận, coi như rảnh cả tuần"}</span></div>${rows.map(([b,i])=>rowHtml(b,i,false)).join("")}<button class="addb" data-n="${esc(m.n)}">+ Thêm khoảng bận cho ${esc(m.n)}</button></div>`});
+    h+=`<div class="mblock"><div class="mhead"><b>${esc(m.n)}</b><span class="hint">${rows.length?rows.length+" khoảng bận":"Chưa nhập lịch bận riêng"}</span></div>${rows.map(([b,i])=>rowHtml(b,i,false)).join("")}<button class="addb" data-n="${esc(m.n)}">+ Thêm khoảng bận cho ${esc(m.n)}</button></div>`});
   const orphan=all.filter(([b])=>!names.includes(b[0])||!b[0]);
   if(orphan.length)h+=`<div class="mblock"><div class="mhead"><b>Chưa gán thành viên</b><span class="hint">Chọn lại thành viên cho các dòng này, nếu không chúng sẽ bị bỏ qua.</span></div>${orphan.map(([b,i])=>rowHtml(b,i,true)).join("")}</div>`;
   $("busy").innerHTML=h;
@@ -139,7 +160,7 @@ function renderBusy(){
   document.querySelectorAll("#busy .x").forEach(e=>e.onclick=()=>{S.busy.splice(e.dataset.i,1);renderBusy();update()});
   document.querySelectorAll("#busy .addb").forEach(e=>e.onclick=()=>{S.busy.push([e.dataset.n,"Thứ 2",8,10]);renderBusy();update()});
 }
-function isFree(name,d,h){return !S.busy.some(b=>b[0]===name&&b[1]===DAYS[d]&&!rowErr(b)&&+b[2]<h+1&&+b[3]>h)}
+function isFree(name,d,h){return !S.busy.some(b=>b[0]===name&&b[1]===DAYS[d]&&!rowErr(b)&&+b[2]<h+1&&+b[3]>h)&&!S.shared.some(b=>b[0]===DAYS[d]&&!slotErr(b[0],b[1],b[2])&&+b[1]<h+1&&+b[2]>h)}
 function compute(){
   const ms=S.members.filter(m=>m.n), dur=Math.min(NH,Math.max(1,Math.round(+$("dur").value)||1)), minp=Math.max(1,+$("minp").value||1);
   const free=ms.map(m=>DAYS.map((_,d)=>Array.from({length:NH},(_,i)=>isFree(m.n,d,H0+i))));
@@ -168,8 +189,8 @@ function update(){
   save();
 }
 $("addm").onclick=()=>{if(S.members.length<8){S.members.push({n:"Thành viên "+(S.members.length+1),m:false});renderMembers();renderBusy();update()}};
-$("sample").onclick=()=>{setSample();renderMembers();renderBusy();update()};
-$("clear").onclick=()=>{S={members:[],busy:[]};renderMembers();renderBusy();update()};
+$("sample").onclick=()=>{setSample();renderMembers();renderShared();renderBusy();update()};
+$("clear").onclick=()=>{S={members:[],busy:[],shared:[]};renderMembers();renderShared();renderBusy();update()};
 ["mname","dur","minp"].forEach(id=>$(id).oninput=()=>update());
 $("msg").onclick=async()=>{
   if(!R||!R.top.length){$("msgok").textContent="Chưa có gợi ý để soạn tin.";return}
@@ -177,7 +198,7 @@ $("msg").onclick=async()=>{
   try{await navigator.clipboard.writeText(t);$("msgok").textContent="Đã sao chép."}catch(e){$("msgok").textContent="Không sao chép được."}
 };
 if(!load())setSample();
-renderMembers();renderBusy();update();
+renderMembers();renderShared();renderBusy();update();
 </script>
 </body>
 </html>
